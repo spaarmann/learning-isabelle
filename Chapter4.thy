@@ -129,15 +129,38 @@ lemma "star r x y \<Longrightarrow> \<exists>n. iter r n x y"
   apply (rule exI[where ?x = 0])
   apply (rule iter_refl)
   apply (erule exE)
-  apply (intro exI)
-  apply (rule exI[where ?x = "Suc n"])
-  apply (rule iter_step)
-
+  apply (rule_tac x = "Suc n" in exI)
+  apply (erule iter_step)
+  apply (assumption)
+  done
 (* The easy way: (this proofs the whole theorem after being given the induction)
   apply (auto intro: iter_refl iter_step)
   done
 *)
 
-thm exI
+(* Ex 4.5 *)
+datatype alpha = a | b
+
+inductive S :: "alpha list \<Rightarrow> bool" where
+  emptyS:   "S []"
+| wrapS:    "S w \<Longrightarrow> S (a # w @ [b])"
+| doubleS:  "S w1 \<Longrightarrow> S w2 \<Longrightarrow> S (w1 @ w2)"
+
+inductive T :: "alpha list \<Rightarrow> bool" where
+  emptyT:   "T []"
+| buildT:   "T w1 \<Longrightarrow> T w2 \<Longrightarrow> T (w1 @ [a] @ w2 @ [b])"
+
+lemma TtoS: "T w \<Longrightarrow> S w"
+  apply (induction rule: T.induct)
+  apply (rule emptyS)
+  apply (auto intro: emptyS wrapS doubleS)
+  done
+
+lemma StoT: "S w \<Longrightarrow> T w"
+  apply (induction rule: S.induct)
+  apply (rule emptyT)
+  apply (auto intro: emptyT buildT)
+
+thm buildT
 
 end
