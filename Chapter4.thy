@@ -1,5 +1,5 @@
 theory Chapter4
-  imports Main
+  imports Main "Chapter3"
 begin
 
 section \<open>Chapter 4.2\<close>
@@ -148,7 +148,7 @@ inductive S :: "alpha list \<Rightarrow> bool" where
 
 inductive T :: "alpha list \<Rightarrow> bool" where
   emptyT:   "T []"
-| buildT:   "T w1 \<Longrightarrow> T w2 \<Longrightarrow> T (w1 @ [a] @ w2 @ [b])"
+| buildT:   "T x \<Longrightarrow> T y \<Longrightarrow> T (x @ (a # y) @ [b])"
 
 lemma TtoS: "T w \<Longrightarrow> S w"
   apply (induction rule: T.induct)
@@ -156,11 +156,44 @@ lemma TtoS: "T w \<Longrightarrow> S w"
   apply (auto intro: emptyS wrapS doubleS)
   done
 
+lemma wrapemptyT: "T w \<Longrightarrow> T ([] @ (a # w) @ [b])"
+  apply (rule buildT)
+  apply (rule emptyT)
+  apply (assumption)
+  done
+
+lemma wrapT : "T w \<Longrightarrow> T (a # w @ [b])"
+  apply (drule wrapemptyT)
+  apply (auto)
+  done
+
 lemma StoT: "S w \<Longrightarrow> T w"
   apply (induction rule: S.induct)
   apply (rule emptyT)
-  apply (auto intro: emptyT buildT)
+  apply (rule wrapT)
+  apply (assumption)
+  (* This should probably make progress, but it just takes too long on the laptop atm:
+  apply (metis emptyT buildT append_Cons append_Nil)
+  apply (auto intro: emptyT buildT simp add: wrapT) *)
+  oops
 
-thm buildT
+(* Ex 4.6 *)
+inductive aval_rel :: "aexp \<Rightarrow> state \<Rightarrow> val \<Rightarrow> bool" where
+  arel_N: "aval_rel (N n) _ n"
+| arel_V: "aval_rel (V x) s (s x)"
+| arel_Plus: "aval_rel a1 s n1 \<Longrightarrow> aval_rel a2 s n2 \<Longrightarrow>
+    aval_rel (Plus a1 a2) s (n1 + n2)"
+
+lemma "aval_rel e s n \<Longrightarrow> aval e s = n"
+  apply (induction rule: aval_rel.induct)
+  apply (auto)
+  done
+
+lemma "aval e s = n \<Longrightarrow> aval_rel e s n"
+  apply (induction e arbitrary: n)
+  apply (auto intro: arel_N arel_V arel_Plus)
+  done
+
+(* Ex 4.7 *)
 
 end
